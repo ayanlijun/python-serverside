@@ -87,7 +87,6 @@ async def django_get_one(info, Model: models.Model, id: str) -> models.Model:
 
 
 async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict = {}) -> ty.Dict:
-    print("HERE!!!!!")
     first = kwargs.pop("first", None)
     after = kwargs.pop("after", None)
     before = kwargs.pop("before", None)
@@ -158,14 +157,17 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
 
     snake_query_fields = [i for i in snake_query_fields if i in regular_fields]
     query_fields = regular_fields + [i.name for i in foreignkey_fields_to_apply]
+    print("query_fields: ", query_fields)
     query = Model.objects.all().only(*query_fields)  # Efficient as possible
 
     has_previous_page = False
     # has_next_page = False
 
     for qfk, qfv in filters.items():
-        query = query.filter(**{qfk: qfv})
+        snake_qfk = inflection.underscore(qfk)
+        query = query.filter(**{snake_qfk: qfv})
 
+    
     if after is not None and before is not None:
         raise Exception("You can't query with both `before` and `after`")
 

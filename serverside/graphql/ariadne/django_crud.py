@@ -2,6 +2,7 @@ import typing as ty
 import inflection
 from collections import OrderedDict
 from rest_framework import serializers
+import django
 from django.db import models
 
 
@@ -253,9 +254,8 @@ async def django_create(info, input: ty.Dict, Model: models.Model, gen_uid: ty.C
     snake_input = recursive_camel2snake(input)
     for field in Model._meta.get_fields():
         if isinstance(field, models.fields.related.ForeignKey):
-            if field.null is False:
-                fk_id = snake_input.pop(f"{field.name}_id")
-                snake_input[field.name] = fk_id
+            fk_id = snake_input.pop(f"{field.name}_id")
+            snake_input[field.name] = fk_id
 
     response = {"error": False, "message": "Create Successfull!", "node": None}
     try:
@@ -298,12 +298,8 @@ async def django_update(info, Model: models.Model, id: str, prevUpdated: float, 
     snake_input = recursive_camel2snake(input)
     for field in Model._meta.get_fields():
         if isinstance(field, models.fields.related.ForeignKey):
-            if field.null is False:
-                try:
-                    fk_id = snake_input.pop(f"{field.name}_id")
-                    snake_input[field.name] = fk_id
-                except Exception:
-                    pass
+            fk_id = snake_input.pop(f"{field.name}_id")
+            snake_input[field.name] = fk_id
 
     response = {"error": False, "message": "Update Successfull!", "node": None}
     try:
@@ -317,6 +313,15 @@ async def django_update(info, Model: models.Model, id: str, prevUpdated: float, 
 
         def update(self, instance, validated_data):
             for attr, value in validated_data.items():
+                if isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ManyToManyDescriptor):
+                    continue
+                elif isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ForwardManyToOneDescriptor):
+                    pass
+                elif isinstance(getattr(Model, attr), django.db.models.query_utils.DeferredAttribute):
+                    pass
+                else:
+                    print("instance not caught?")
+                    pass
                 setattr(instance, attr, value)
             instance.save()
             return instance

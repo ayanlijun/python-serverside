@@ -316,7 +316,8 @@ async def django_update(info, Model: models.Model, id: str, prevUpdated: float, 
         def update(self, instance, validated_data):
             for attr, value in validated_data.items():
                 if isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ManyToManyDescriptor):
-                    continue
+                    vals = validated_data.pop(attr, None)
+                    getattr(instance, attr).set(vals)
                 elif isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ForwardManyToOneDescriptor):
                     pass
                 elif isinstance(getattr(Model, attr), django.db.models.query_utils.DeferredAttribute):

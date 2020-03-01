@@ -297,8 +297,11 @@ async def django_update(info, Model: models.Model, id: str, prevUpdated: float, 
     snake_input = recursive_camel2snake(input)
     for field in Model._meta.get_fields():
         if isinstance(field, models.fields.related.ForeignKey):
-            fk_id = snake_input.pop(f"{field.name}_id")
-            snake_input[field.name] = fk_id
+            try:
+                fk_id = snake_input.pop(f"{field.name}_id")
+                snake_input[field.name] = fk_id
+            except KeyError:
+                continue  # Foreign key wasn't supplied to be updated
 
     response = {"error": False, "message": "Update Successfull!", "node": None}
     try:

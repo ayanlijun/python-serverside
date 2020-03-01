@@ -157,7 +157,6 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
 
     snake_query_fields = [i for i in snake_query_fields if i in regular_fields]
     query_fields = regular_fields + [i.name for i in foreignkey_fields_to_apply]
-    print("query_fields: ", query_fields)
     query = Model.objects.all().only(*query_fields)  # Efficient as possible
 
     has_previous_page = False
@@ -219,8 +218,6 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
             "node": inst
         } for pos, inst in enumerate(enumerable_query)
     ]
-
-    print("EDGES: ", edges)
 
     if pos < first:
         end_cursor = pos

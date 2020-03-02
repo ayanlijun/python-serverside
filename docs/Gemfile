@@ -43,7 +43,7 @@ gem 'mercenary', '0.3.6'
 gem 'pathutil', '0.16.1'
 gem 'rouge', '2.2.1'
 gem 'safe_yaml', '1.0.4'
-gem 'jekyll', '3.6.2'
+gem "jekyll", ">= 3.6.3"
 gem 'jekyll-avatar', '0.5.0'
 gem 'jekyll-coffeescript', '1.0.2'
 gem 'jekyll-commonmark', '1.1.0'

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-git subtree push --prefix docs/_site origin gh-pages
+cd docs && gh-pages -d _site

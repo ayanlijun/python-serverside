@@ -1,5 +1,6 @@
 import typing as ty
 from rest_framework import serializers
+import django
 from django.db import models
 from ._utils import recursive_camel2snake
 
@@ -15,7 +16,21 @@ async def django_create(info, input: ty.Dict, Model: models.Model, gen_uid: ty.C
     response = {"error": False, "message": "Create Successfull!", "node": None}
     try:
         def create(self, validated_data):
+            attrs_to_set = {}
+            for attr, value in validated_data.items():
+                if isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ManyToManyDescriptor):
+                    vals = validated_data.pop(attr, None)
+                    attrs_to_set[attr] = vals
+                elif isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ForwardManyToOneDescriptor):
+                    pass
+                elif isinstance(getattr(Model, attr), django.db.models.query_utils.DeferredAttribute):
+                    pass
+                else:
+                    print("instance not caught?")
+                    pass
             instance = Model.objects.create(**validated_data)
+            for attr, value in attrs_to_set.items():
+                setattr(instance, attr, value)
             instance.save()
             return instance
 

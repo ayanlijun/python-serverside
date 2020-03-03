@@ -1,7 +1,10 @@
 from .base_resolver import BaseResolver
-from .django_crud import (
-    django_get_one, django_get_many,
-    django_create, django_update, django_delete
+from .django_models import (
+    django_get_one,
+    django_get_many,
+    django_create,
+    django_update,
+    django_delete
 )
 
 __all__ = [

@@ -1,6 +1,16 @@
 from django.db import models
 
 
+""" Notes
+
+The S3Field stores 3 keys of imformation to allow
+for maximum flexibility, a `key` and `bucket` are naturally
+needed, but we also included a `location` key, so that
+even in the circumstance you may be using different
+object storage platforms, we have got you covered!
+"""
+
+
 class S3FieldObject:
 
     def __init__(self, location: str, bucket: str = None, key: str = None):

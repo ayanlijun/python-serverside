@@ -9,26 +9,330 @@ isHome: true
   <h1 id="overview" class="page-header">Overview</h1>
 
   <blockquote>
-    This is a serverside toolkit for writting python backend logic much faster!
+    A serverside toolkit for writting python backend logic much faster!
   </blockquote>
 
-  <h3 id="features">Features</h3>
+  <h3 id="why">Why</h3>
+  <p>
+    Our philosophy was not to introduce another framework for you to learn, that is then
+    hard to intergrate with other frameworks and packages, thus <code>serverside</code>
+    is more like a bunch of helper functions and classes. We have lots of helpers built
+    around Ariadne GraphQL, authentication, django fields, generators, loggers,
+    server-side-events, etc...
+  </p>
+  <p>
+    We hope that with this project being opensource, we can handle use-cases that we havn't
+    thought of. We wrote this library specifically to prototype new ideas <b>really</b> fast,
+    but every application is different, there may be situations that we havn't thought of,
+    if you feel there is something we should add, or any problems, please start an issue,
+    and we can work together to solve it, create a pull request and that make sure
+    a new version is published with said features.
+  </p>
+
+  <h3 id="installation">Installation</h3>
+
+  This project is on PyPi, and you can install it via:
+
+{% highlight bash %}
+pip3 install serverside
+{% endhighlight %}
+</section>
+
+<section class="bs-docs-section">
+  <h1 id="graplhql" class="page-header">GraphQL</h1>
+  <p>
+    This sections shows how to use our graphQL helper functions. There are two major frameworks
+    for working with graphQL from python, <code>ariadne</code> and <code>graphene</code>.
+    Graphene generates the schema from code, while Ariadne requires the schema to be already present.
+    We like working with Ariadne because we pay more attention to the design and architecture of
+    our service, and then add the nescessary resolvers to return that information. We have
+    found that when you have complex services, using multiple databases or adding intermediatry logic, having the ability to
+    have fine grain control is essential. We have used graphene in the past, and was quite a challenge when topics
+    such as microservice architecture, custom inputs were present.
+  </p>
+  <p>
+    It's important to know that we fully endorse relay style pagination, so our automatic crud operation for listing
+    rows automatically formats to use relay style (<code>edges -> node -> data</code>) 
+  </p>
+  <h2 id="resolvers">Setup</h2>
+  In your settings file, you need to make sure you have the following
+
+{% highlight python %}
+from ariadne import QueryType, MutationType
+QUERY = QueryType()
+MUTATION = MutationType()
+{% endhighlight %}
+
+  Once that is done, you can then setup your normal <code>Ariadne</code>
+  graphQL schema. We make use of a graphQL file for our schema. We love schema
+  first graphQL because it allows for maximum flexibility in using your own
+  custom logic and it can be reviewed by multiple members in your team.
+
+{% highlight python %}
+import ariadne
+from django.conf import settings
+from serverside.graphql.ariadne.scalars import datetime_scalar
+from serverside.graphql.ariadne.relay import relay_node
+
+schema = open("schema.graphql", "r").read()
+schema = ariadne.make_executable_schema(
+    schema,
+    [
+        settings.QUERY,
+        settings.MUTATION,
+        relay_node,
+        datetime_scalar,
+    ]
+)
+{% endhighlight %}
+
+  Now you can use this schema as you normally do, read on for how to include our
+  custom resolvers to help write endpoints super fast.
+
+  <h2 id="resolvers">BaseResolver</h2>
+    For each django application, for e.g. <code>users</code>, which contains
+    <code>models.py</code>, <code>migrations</code>, etc.., we have another file
+    called <code>resolvers.py</code>, where we would define a resolver class for
+    each model in <code>models.py</code>.
+
+{% highlight python %}
+import typing as ty
+from serverside.graphql.ariadne import BaseResolver, auto_crud
+from apps.users.models import User
+
+class UserResolver(BaseResolver):
+    class Meta:
+        model = User
+        auto_crud = auto_crud(
+            count="userCount", get_one="user", get_many="users",
+            create="createUser", update="updateUser", delete="deleteUser"
+        )
+        uid_gen = lambda: str(uuid.uuid4())
+
+
+def export_resolvers() -> ty.List:
+    return [
+        UserResolver,
+    ]
+{% endhighlight %}
+
+    We inherit from our <code>BaseResolver</code> class, and on the <code>Meta</code>,
+    define the model we are using, names for our automatic crud operations, and a function for
+    generating unique id's (used for the primary key in create operations).
+
+    The <code>auto_crud</code> is the interesting part, here we define the names of the
+    graphQL actions for this models crud operations.
+
+Now that we have our resolvers, we can revisit where we define our schema, and update it so it reads:
+
+{% highlight python %}
+import ariadne
+from django.conf import settings
+from serverside.graphql.ariadne.scalars import datetime_scalar
+from serverside.graphql.ariadne.relay import relay_node
+from serverside.graphql.ariadne.helpers import combine_resolvers  # New
+from apps.users.resolvers import export_resolvers as er1  # New
+
+schema = open("schema.graphql", "r").read()
+schema = ariadne.make_executable_schema(
+    schema,
+    [
+        settings.QUERY,
+        settings.MUTATION,
+        relay_node,
+        datetime_scalar,
+        *combine_resolvers([er1])  # New
+    ]
+)
+{% endhighlight %}
+
+  And that's it, we now have all all crud operations for the <code>User</code> model.
+  For examples of how a <code>schema.graphl</code> file might look, see our example in
+  the main respositories <code>example</code> directory.
+
+  <h2 id="customcrud">Custom CRUD</h2>
+
+  Let's say you have custom logic you want to do before creating a user, and then some more
+  logic to create the user. Let's say our custom logic, we can alter the <code>BaseResolver</code>
+  to read:
+
+{% highlight python %}
+import typing as ty
+from serverside.graphql.ariadne import BaseResolver, auto_crud
+from apps.users.models import User
+
+class UserResolver(BaseResolver):
+    class Meta:
+        model = User
+        auto_crud = auto_crud(
+            count="userCount", get_one="user", get_many="users",
+            update="updateUser", delete="deleteUser"  # Note we didn't pass `create`
+        )
+        uid_gen = lambda: str(uuid.uuid4())
+
+    @staticmethod
+    @settings.MUTATION.field("createUser")
+    async def resolve_create(_, info, input: ty.Dict):
+        result = custom_logic()
+        user_instance = custom_create_user_logic()
+        return {"error": False, "message": "Create Successfull!", "node": user_instance}
+
+
+def export_resolvers() -> ty.List:
+    return [
+        UserResolver,
+    ]
+{% endhighlight %}
+
+  <h2 id="custom-fields">Custom Fields</h2>
+  We may also want that our model has a calculated field, that is not present
+  on the model, let's say that we wanted to return "Hi ," before every name, we can
+  do this via:
+
+{% highlight python %}
+from ariadne import ObjectType
+
+class UserResolvers(BaseResolver):
+
+    class Meta:
+        ...
+
+    user = ObjectType("User")
+
+    @staticmethod
+    @user.field("hiName")
+    async def get_hi_name(obj, *args, **kwargs):
+        return f"Hi, {obj.name}"
+{% endhighlight %}
+
+  <h2 id="database hits">Database Hits</h2>
+
+  You may be wondering that with so much logic taken care of automatically, how database queries might look.
+  For django models we make use of Django's ORM. When django queries the database, it handles data from foreign keys or
+  many-to-many relationships by not writing the query as a series of SQL <code>join</code>'s, but has 1 call per table
+  (assuming the ORM query has been written correctly), and then joins them in python.
+  We have made sure that our ORM queries are fully optimized in all circumstances. This means that we not only have
+  the ability to rapidly create models with full CRUD functionality, but also have them highly optimized so they
+  work well in production and not wasting resources.
+
+</section>
+
+<section class="bs-docs-section">
+  <h1 id="authentication" class="page-header">Authentication</h1>
+
+  This section shows some useful authentication helpers.
+
+  <h2 id="jwt">JWT</h2>
+
+  Inside your settings file, you could add:
+
+{% highlight python %}
+from serverside.auth import JWTAuth
+
+JWT_AUTH = JWTAuth(
+    secret_key="secret_key",
+    encode_algorithm="HS512",
+    decode_algorithms=["HS512"]
+)
+{% endhighlight %}
+
+  Where you could now encode and decode with:
+
+{% highlight python %}
+from django.conf import settings
+
+token = settings.JWT_AUTH.encode_jwt(
+    payload={"user_id": user.id},
+    expiration=datetime.now() + timedelta(hours=1)
+)
+
+authenticated, error_message, decoded_jwt = settings.JWT_AUTH.authenticate_jwt(token)
+{% endhighlight %}
+
+  <h2 id="passwords">Passwords</h2>
+
+  We also have helpers for generated password hashes and validating them:
+
+{% highlight python %}
+from serverside.auth import generate_hashed_password, validate_password
+
+hashed_password = generated_hashed_password("pass1234")  # str
+validated = validate_password(password, user.password)  # boolean
+{% endhighlight %}
+
+  We use the Argon2 hashing algorithm.
+
+</section>
+
+<!-- <h3 id="social-buttons" data-no-menu>Header 3</h3> -->
+
+
+<section class="bs-docs-section">
+  <h1 id="django-fields" class="page-header">Django Fields</h1>
+
+  This section shows our custom django fields
+
+  <h2 id="s3field">S3Field</h2>
+
+  Our <code>S3Field</code> was introduced for conveniently keeping
+  information about object storage, particularly amazons s3. It can
+  store three attributes:
 
   <ul>
-    <li>Lot's of GraphQL helpers, built over Ariadne</li>
-    <li>Authentication helpers</li>
-    <li>Custom Django Fields</li>
-    <li>Helpful generations, such as identicons</li>
-    <li>Custom colour loggers</li>
+    <li>location </li>
+    <li>bucket</li>
+    <li>key</li>
   </ul>
+
+  <p>
+    The 'location' attribute was introduced because of certain use-cases of having
+    different object storage platforms in the same database, so may be useful for
+    other people too.
+  </p>
+  <p>
+    You can use it as follows:
+  </p>
+
+{% highlight python %}
+from serverside.django.fields import S3Field
+
+class User(django.db.models.Model):
+    name = models.CharField(max_length=255, null=False, blank=False)
+    avatar = S3Field(null=False)  # This is saved in the database the same as `CharField`
+{% endhighlight %}
+
+  You can now save to it via:
+
+{% highlight python %}
+from serverside.django.fields import S3FieldObject
+
+user = some_get_user_logic()
+user.avatar = S3FieldObject(location="location", bucket="bucket", key="key")
+print("bucket: ", user.avatar.bucket)
+{% endhighlight %}
+
 </section>
 
 
 <section class="bs-docs-section">
-  <h1 id="installation" class="page-header">Installation</h1>
+  <h1 id="generators" class="page-header">Generators</h1>
 
-{% highlight bash %}
-$ pip3 install serverside
+  This section has some useful generator functions
+
+  <h2 id="s3field">Identicon</h2>
+
+  You can produce a high quality identicon png image, similar to
+  that on github via:
+
+{% highlight python %}
+from serverside.generators import Identicon
+
+png_bytes = Identicon("any_string").identicon
 {% endhighlight %}
 
 </section>
+
+
+
+
+

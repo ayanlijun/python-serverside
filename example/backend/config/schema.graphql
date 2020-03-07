@@ -1,0 +1,183 @@
+######################################################
+## Unique
+
+scalar Datetime
+
+type PageInfo {
+    total: Int
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: Int
+    endCursor: Int
+}
+
+type LoginResponse {
+    error: Boolean
+    message: String
+    user: User
+    token: String
+}
+
+######################################################
+## Interfaces
+
+interface Node {
+    id: ID!
+}
+
+######################################################
+## Nodes
+
+type User implements Node {
+    id: ID!
+    name: String
+    username: String
+    avatarUrl: String
+    updated: Datetime
+    created: Datetime
+}
+
+type Action implements Node {
+    id: ID!
+    action: String
+    updated: Datetime
+    created: Datetime
+}
+
+type PermissionGroup implements Node {
+    id: ID!
+    name: String
+    description: String
+    updated: Datetime
+    created: Datetime
+}
+
+######################################################
+## Connections & Edges  (Relay)
+
+type UserEdge {
+    cursor: String!
+    node: User
+}
+
+type UserConnection {
+    edges: [UserEdge]
+    pageInfo: PageInfo!
+}
+
+type ActionEdge {
+    cursor: String!
+    node: Action
+}
+
+type ActionConnection {
+    edges: [ActionEdge]
+    pageInfo: PageInfo!
+}
+
+type PermissionGroupEdge {
+    cursor: String!
+    node: PermissionGroup
+}
+
+type PermissionGroupConnection {
+    edges: [PermissionGroupEdge]
+    pageInfo: PageInfo!
+}
+
+######################################################
+## Payloads
+
+type BasicPayload {
+    error: Boolean!
+    message: String
+}
+
+type UserPayload {
+    error: Boolean!
+    message: String
+    node: User
+}
+
+type ActionPayload {
+    error: Boolean!
+    message: String
+    node: Action
+}
+
+type PermissionGroupPayload {
+    error: Boolean!
+    message: String
+    node: PermissionGroup
+}
+
+######################################################
+## Inputs
+
+input UserInput {
+    username: String!
+    password: String!
+    name: String!
+    permission_group_id: String
+}
+
+input ActionInput {
+    action: String
+}
+
+input PermissionGroupInput {
+    name: String
+    description: String
+}
+
+
+######################################################
+## Query & Mutation
+
+type Query {
+
+    login(username: String!, password: String!): LoginResponse!
+    userCount: Int
+    user(id: String): User!
+    users(
+        first: Int, after: Int, before: Int, sortBy: String, sortDirection: String,
+        name: String, name__startswith: String, name__istartswith: String,
+        name__endswith: String, name__iendswith: String, name__contains: String, name__icontains: String,
+        username: String, username__startswith: String, username__istartswith: String,
+        username__endswith: String, username__iendswith: String, username__contains: String, username__icontains: String,
+    ): UserConnection!
+
+    actionCount: Int
+    action(id: String): Action!
+    actions(
+        first: Int, after: Int, before: Int, sortBy: String, sortDirection: String,
+        action: String, action__startswith: String, action__istartswith: String,
+        action__endswith: String, action__iendswith: String, action__contains: String, action__icontains: String,
+    ): ActionConnection!
+
+    permissionGroupCount: Int
+    permissionGroup(id: String): PermissionGroup!
+    permissionGroups(
+        first: Int, after: Int, before: Int, sortBy: String, sortDirection: String,
+        name: String, name__startswith: String, name__istartswith: String,
+        name__endswith: String, name__iendswith: String, name__contains: String, name__icontains: String,
+        description: String, description__startswith: String, description__istartswith: String,
+        description__endswith: String, description__iendswith: String, description__contains: String, description__icontains: String,
+    ): PermissionGroupConnection!
+}
+
+
+type Mutation {
+
+    createUser(input: UserInput!): UserPayload
+    updateUser(id: ID!, prevUpdated: Float!, input: UserInput!): UserPayload
+    deleteUser(id: ID!): BasicPayload
+
+    createAction(input: ActionInput!): ActionPayload
+    updateAction(id: ID!, prevUpdated: Float!, input: ActionInput!): ActionPayload
+    deleteAction(id: ID!): ActionPayload
+
+    createPermissionGroup(input: PermissionGroupInput!): PermissionGroupPayload
+    updatePermissionGroup(id: ID!, prevUpdated: Float!, input: PermissionGroupInput!): PermissionGroupPayload
+    deletePermissionGroup(id: ID!): BasicPayload
+}

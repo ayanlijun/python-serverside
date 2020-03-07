@@ -1,0 +1,27 @@
+version: '3.5'
+
+services:
+
+  postgres:
+    image: postgres:12.2
+    ports:
+      - "5430:5432"
+    environment:
+      - POSTGRES_MULTIPLE_DATABASES=dev,test
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./databases/postgres/initdb.d:/docker-entrypoint-initdb.d
+    tty: true
+
+  backend:
+    build: ./docker-images/backend
+    ports:
+      - "8686:8080"
+    environment:
+      - "PYTHONASYNCIODEBUG=1"
+    volumes:
+      - ./backend:/srv
+      - ../:/modules/serverside
+    working_dir: /srv
+    tty: true

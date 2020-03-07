@@ -9,8 +9,20 @@ isHome: true
   <h1 id="overview" class="page-header">Overview</h1>
 
   <blockquote>
-    A serverside toolkit for writting python backend logic much faster!
+    A serverside toolkit for writting python backends in <i>minutes</i>!
   </blockquote>
+
+  <h3 id="goal">Goal</h3>
+  <p>
+    Our goal is to have a library, that we can use to rapidly prototype new ideas,
+    essentially create a backend for a new project in a matter of minutes, that
+    can be easily expanded on, and because it's built around Django, be
+    trusted to be used in production.
+  </p>
+  <p>
+    We want people to focus more on creating new ideas, and less time on
+    maintaining and building systems!
+  </p>
 
   <h3 id="why">Why</h3>
   <p>
@@ -18,10 +30,15 @@ isHome: true
     hard to intergrate with other frameworks and packages, thus <code>serverside</code>
     is more like a bunch of helper functions and classes. We have lots of helpers built
     around Ariadne GraphQL, authentication, django fields, generators, loggers,
-    server-side-events, etc...
+    server-side-events, etc.
   </p>
   <p>
-    We hope that with this project being opensource, we can handle use-cases that we havn't
+    An important note, is that we have built most functionality around python's
+    <code>async</code> functionality. This is because it makes this library more
+    future proof, and with Django planning a full move to async, it is the right move.
+  </p>
+  <p>
+    We hope that with this project being open-source, we can handle use-cases that we havn't
     thought of. We wrote this library specifically to prototype new ideas <b>really</b> fast,
     but every application is different, there may be situations that we havn't thought of,
     if you feel there is something we should add, or any problems, please start an issue,
@@ -36,6 +53,55 @@ isHome: true
 {% highlight bash %}
 pip3 install serverside
 {% endhighlight %}
+
+  <h3 id="project-structure">Project Structure</h3>
+
+  <p>
+    Everyone's project structure is different, but as we use Django
+    for core components, we generally have a structure similar to that
+    of Django. We have a folder called <code>apps</code> where each sub-folder
+    would contain similar logic, for example <code>users</code>, <code>transaction</code>,
+    <code>media</code>.
+  </p>
+  <p>
+    We then have a folder called <code>config</code>, which has a sub-folder called
+    <code>settings</code>, which has files <code>base.py</code>, <code>dev.py</code>,
+    <code>stage.py</code>, <code>prod.py</code>, etc... which are exactly the same
+    as Django's <code>settings.py</code> file, just that we can conveniently choose
+    the settings file we wish to run with.
+  </p>
+  <p>
+    All other files in <code>config</code>, are related to things such as
+    the graphql schema, routing, middleware, etc...
+  </p>
+  <p>
+    And then in the root directory, we have a simple <code>main.py</code> file,
+    that we can use to launch our server. The following diagram summerizes this
+  </p>
+
+{% highlight bash %}
+.
+├── apps
+│   └── users
+│       ├── migrations
+│       │   └── 0001_initial.py
+│       ├── models.py
+│       └── resolvers.py
+├── config
+│   ├── middleware.py
+│   ├── router.py
+│   ├── routes.py
+│   ├── schema.graphql
+│   ├── schema.py
+│   ├── settings
+│   │   ├── base.py
+│   │   ├── dev.py
+│   │   ├── prod.py
+│   │   └── stage.py
+│   └── urls.py
+└── main.py
+{% endhighlight %}
+
 </section>
 
 <section class="bs-docs-section">
@@ -54,11 +120,11 @@ pip3 install serverside
     It's important to know that we fully endorse relay style pagination, so our automatic crud operation for listing
     rows automatically formats to use relay style (<code>edges -> node -> data</code>) 
   </p>
-  <h2 id="resolvers">Setup</h2>
+  <h2 id="setup">Setup</h2>
   In your settings file, you need to make sure you have the following
 
 {% highlight python %}
-from ariadne import QueryType, MutationType
+from serverside.graphql.ariadne import QueryType, MutationType  # Same as ariadne.{QueryType, MutationType}
 QUERY = QueryType()
 MUTATION = MutationType()
 {% endhighlight %}
@@ -89,7 +155,7 @@ schema = ariadne.make_executable_schema(
   Now you can use this schema as you normally do, read on for how to include our
   custom resolvers to help write endpoints super fast.
 
-  <h2 id="resolvers">BaseResolver</h2>
+  <h2 id="baseresolver">BaseResolver</h2>
     For each django application, for e.g. <code>users</code>, which contains
     <code>models.py</code>, <code>migrations</code>, etc.., we have another file
     called <code>resolvers.py</code>, where we would define a resolver class for
@@ -150,6 +216,47 @@ schema = ariadne.make_executable_schema(
   For examples of how a <code>schema.graphl</code> file might look, see our example in
   the main respositories <code>example</code> directory.
 
+  <h2 id="automatic-filtering">Automatic Filtering</h2>
+
+  When we set <code>get_many="users"</code> in our resolver, we automatically
+  provide filtering through the graphql query. We directly use the syntax of 
+  Django's ORM to do the filtering. So for example, the following would be our
+  graphQL definition of <code>users</code> in our <code>schema.graphql</code> file:
+
+{% highlight graphql %}
+users(
+  first: Int, after: Int, before: Int, sortBy: String, sortDirection: String,
+  name: String, name__startswith: String, name__istartswith: String,
+  name__endswith: String, name__iendswith: String, name__contains: String, name__icontains: String,
+  username: String, username__startswith: String, username__istartswith: String,
+  username__endswith: String, username__iendswith: String, username__contains: String, username__icontains: String,
+): UserConnection!
+{% endhighlight %}
+
+  Now, when you submit your graphQL query, all of these attributes can now be filtered
+  as needed, all the logic already taken care for you. For example, the following query
+  will get the first 5 users, sorted alphabetically on their username, whos username
+  contains the word <i>python</i>, and just return the fields <code>id</code>,
+  <code>username</code> and <code>updated</code>. This is where we think the power
+  of our <code>serverside</code> library comes in, we want to to build things <i>FAST</i>,
+  but also <i>work</i> and are <i>usable</i>. We essentially have all this logic,
+  from only writing our models in <code>models.py</code>, and a small <code>UserResolver</code>
+  class.
+
+{% highlight graphql %}
+query {
+  users(first: 5, sortBy: "username", sortDirection: "asc", username__icontains="python") {
+    edges {
+      node {
+        id
+        username
+        updated
+      }
+    }
+  } 
+}
+{% endhighlight %}
+
   <h2 id="customcrud">Custom CRUD</h2>
 
   Let's say you have custom logic you want to do before creating a user, and then some more
@@ -190,7 +297,7 @@ def export_resolvers() -> ty.List:
   do this via:
 
 {% highlight python %}
-from ariadne import ObjectType
+from serverside.graphql.ariadne import ObjectType  # Same as ariadne.ObjectType
 
 class UserResolvers(BaseResolver):
 
@@ -206,14 +313,20 @@ class UserResolvers(BaseResolver):
 {% endhighlight %}
 
   <h2 id="database hits">Database Hits</h2>
+  
+  <p>
+    You may be wondering that with so much logic taken care of automatically, how database queries might look.
+    For django models we make use of Django's ORM. When django queries the database, it handles data from foreign keys or
+    many-to-many relationships by not writing the query as a series of SQL <code>join</code>'s, but has 1 call per table
+    (assuming the ORM query has been written correctly), and then joins them in python.
+    We have made sure that our ORM queries are fully optimized in all circumstances. This means that we not only have
+    the ability to rapidly create models with full CRUD functionality, but also have them highly optimized so they
+    work well in production and not wasting resources.
+  </p>
+  <p>
+    With Django planning to fully move to async, this will be even faster!
+  </p>
 
-  You may be wondering that with so much logic taken care of automatically, how database queries might look.
-  For django models we make use of Django's ORM. When django queries the database, it handles data from foreign keys or
-  many-to-many relationships by not writing the query as a series of SQL <code>join</code>'s, but has 1 call per table
-  (assuming the ORM query has been written correctly), and then joins them in python.
-  We have made sure that our ORM queries are fully optimized in all circumstances. This means that we not only have
-  the ability to rapidly create models with full CRUD functionality, but also have them highly optimized so they
-  work well in production and not wasting resources.
 
 </section>
 
@@ -265,6 +378,71 @@ validated = validate_password(password, user.password)  # boolean
 </section>
 
 <!-- <h3 id="social-buttons" data-no-menu>Header 3</h3> -->
+
+<section class="bs-docs-section">
+  <h1 id="middleware" class="page-header">Middleware</h1>
+
+  With graphql requests we wanted to add things in the middleware
+  that would be accessible in the graphql context, so we added a
+  way to <i>middlewarize</i> any function, and then set that result as
+  a key in the context
+
+  <h2 id="middlewarize">Middlewarize</h2>
+
+  You can define any function, and then middlewarize. The following example shows
+  a function which authorizes a user, and then returns that user instance.
+  Functions to be <code>middlewarized</code> need to be <code>async</code>,
+  and they also need to accept a <code>request</code> and <code>context</code>
+  object:
+
+{% highlight python %}
+from serverside.middleware import middlewareize
+from apps.users.models import User
+
+
+async def authorize(request, context):  # `authenticate` raises an exception if not valid
+    authentication_token = request.headers.get("Authorization")
+    if not authentication_token:
+        raise Exception("No token in request!")
+    user = User.authenticate(token=authentication_token)
+    return user
+
+authorize_middleware = middlewareize("user", authorize)
+{% endhighlight %}
+
+  Now we can use that middleware via:
+
+{% highlight python %}
+from serverside.middleware import run_middleware
+from .middleware import authorize_middleware
+
+@dataclass
+class Context:
+    name = "context"
+
+async def handle_graphql(request):
+    context = await run_middleware(
+        request,
+        [
+            authorize_middleware,
+        ]
+        Context 
+    )
+    json_data = await request.json()
+    success, result = await graphql(schema, json_data, context_value=context)
+{% endhighlight %}
+
+  <p>
+    And now, we inside our graphql context, we access the key <code>users</code>,
+    and have all the information we need, calculated from the middleware.
+  </p>
+  <p>
+    The idea of chaining middleware together like this was taken from Express.js,
+    a popular Javascript backend library.
+  </p>
+
+
+</section>
 
 
 <section class="bs-docs-section">
@@ -331,6 +509,55 @@ png_bytes = Identicon("any_string").identicon
 {% endhighlight %}
 
 </section>
+
+<section class="bs-docs-section">
+  <h1 id="logging" class="page-header">Logging</h1>
+
+  Logging is important in development, usage of print statements
+  in almost all scenarios is a bad idea, as depending on what
+  stage the server is in, we can set a logging level to choose
+  which level of logs we want to be output.
+
+  <h2 id="color-logger">Color Logger</h2>
+
+  We provide a quick way
+  to set up a color logger to easily see any problems that exist:
+
+{% highlight python %}
+from serverside.logging import get_logger
+LOGGER = get_logger(name="MAINSERVICE")
+{% endhighlight %}
+
+  And then you could use such as:
+
+{% highlight python %}
+from django.conf import settings
+settings.LOGGER.info("Hello World")
+{% endhighlight %}
+
+  You can also override the colors, the defaults in our implementation are:
+
+{% highlight python %}
+def get_logger(
+    name: str,
+    debug_primary: str = "cyan",
+    debug_secondary: str = "bold_white",
+    info_primary: str = "bold_purple",
+    info_secondary: str = "white",
+    warning_primary: str = "bold_black,bg_yellow",
+    warning_secondary: str = "bold_yellow",
+    error_primary: str = "bold_whote,bg_red",
+    error_secondary: str = "bold_red",
+    critical_primary: str = "bold_white,bg_red",
+    critical_secondary: str = "bold_red"
+) -> logging.Logger:
+{% endhighlight %}
+</section>
+
+
+
+
+
 
 
 

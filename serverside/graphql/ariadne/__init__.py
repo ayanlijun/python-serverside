@@ -7,6 +7,7 @@ from .django_models import (
     django_update,
     django_delete
 )
+from .helpers import combine_resolvers, auto_crud
 
 __all__ = [
     "ObjectType",
@@ -17,5 +18,7 @@ __all__ = [
     "django_get_many",
     "django_create",
     "django_update",
-    "django_delete"
+    "django_delete",
+    "combine_resolvers",
+    "auto_crud"
 ]

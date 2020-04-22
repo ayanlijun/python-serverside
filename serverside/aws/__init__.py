@@ -1,6 +1,6 @@
-from .clients.s3 import s3_client
+from .clients.s3 import S3Client
 
 
 __all__ = [
-    "s3_client"
+    "S3Client",
 ]

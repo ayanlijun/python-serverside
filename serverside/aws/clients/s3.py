@@ -25,6 +25,13 @@ class S3Client:
             use_ssl=use_ssl
         )
 
+    @property
+    def client(self):
+        return self._client
+
+    @property
+    def resource(self):
+        return self._resource
     def generate_presigned_url(
         self,
         bucket: str,

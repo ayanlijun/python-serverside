@@ -32,6 +32,14 @@ class S3Client:
     @property
     def resource(self):
         return self._resource
+
+    def create_bucket_if_not_exists(self, bucket: str, acl: str):
+        try:
+            self._client.head_bucket(Bucket=bucket)
+        except Exception as err:
+            print("err: NEED TO FIND OUT WHAT ERROR THIS IS TO SPECIFICALLY CATCH!!!", err)
+            self._client.create_bucket(ACL=acl, Bucket=bucket)
+
     def generate_presigned_url(
         self,
         bucket: str,

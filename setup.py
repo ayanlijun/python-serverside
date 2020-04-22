@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="serverside",
-    version="1.0.2",
+    version="1.0.3",
     author="asciialex",
     author_email="alex@asciialex.com",
     description="Python serverside toolkit",

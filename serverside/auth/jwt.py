@@ -20,6 +20,7 @@ class JWTAuth:
         ).decode("utf-8")
 
     def authenticate_jwt(self, token: str) -> tuple:
+        """ returns: (<error:bool>, <err_msg:str>, <decoded_jwt>: dict) """
         try:
             decoded = jwt.decode(token, self.secret_key, algorithms=self.decode_algorithms)
             return (True, None, decoded)
@@ -29,3 +30,5 @@ class JWTAuth:
             return (False, "Not enough segments in the token.", None)
         except Exception as err:
             return (False, str(err), None)
+
+

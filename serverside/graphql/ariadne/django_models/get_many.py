@@ -74,7 +74,8 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
 
     snake_query_fields = [i for i in snake_query_fields if i in regular_fields]
     query_fields = regular_fields + [i.name for i in foreignkey_fields_to_apply]
-    query = Model.objects.all().only(*query_fields)  # Efficient as possible
+    # The database should only retrieve fields it needs.
+    query = Model.objects.all().only(*query_fields)
 
     has_previous_page = False
     # has_next_page = False

@@ -91,5 +91,3 @@ class S3Client:
             CopySource=f"{from_bucket}/{from_key}"
         )
 
-
-s3_client = S3Client()

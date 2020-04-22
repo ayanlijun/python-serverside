@@ -91,3 +91,5 @@ class S3Client:
             CopySource=f"{from_bucket}/{from_key}"
         )
 
+    def get_object(self, bucket: str, key: str):
+        return self._client.get_object(Bucket=bucket, Key=key)["Body"].read()

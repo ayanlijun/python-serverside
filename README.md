@@ -6,7 +6,8 @@
 <h4 align="center">A toolkit for super fast backend development.</h4>
 
 <p align="center">
-[![PyPI version](https://badge.fury.io/py/serverside.svg)](https://badge.fury.io/py/serverside)![Package Testing](https://github.com/asciialex/python-serverside/workflows/Package%20Testing/badge.svg)
+<a href="https://badge.fury.io/py/serverside"><img src="https://badge.fury.io/py/serverside.svg" alt="PyPI version" height="18"></a>
+<a href="https://github.com/asciialex/python-serverside/workflows/Package%20Testing/badge.svg" alt="Package Testing Status" height="18"></a>
 </p>
 
 <p align="center">

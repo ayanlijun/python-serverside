@@ -6,13 +6,13 @@ A toolkit for super fast backend development.
 
 [Documentation](https://asciialex.github.io/python-serverside/)
 
-<h4>Why?</h4>
+## Why
 
 We want to take as much boilerplate out of writing applications as
 possible, so that you can focus on the logic of why you started your
 application in the first place.
 
-<h4>Instalation</h4>
+## Installation
 
 ```bash
 pip3 install serverside

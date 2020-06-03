@@ -1,0 +1,2 @@
+class RedisKeyNotFoundException(Exception):
+    pass

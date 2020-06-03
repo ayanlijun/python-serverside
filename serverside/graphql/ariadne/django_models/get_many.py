@@ -1,4 +1,5 @@
 import typing as ty
+
 import inflection
 from django.db import models
 
@@ -67,13 +68,15 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
             if field.name in snake_query_fields:
                 many2one_fields_to_apply.append(field)
         elif isinstance(field, models.fields.reverse_related.ManyToManyRel):
-            print("TODO- THIS NEEDS TO BE HANDLED!!!!")
+            print("TODO!")
+            # TODO? 1223
             pass
         else:
             regular_fields.append(field.name)
 
     snake_query_fields = [i for i in snake_query_fields if i in regular_fields]
     query_fields = regular_fields + [i.name for i in foreignkey_fields_to_apply]
+
     # The database should only retrieve fields it needs.
     query = Model.objects.all().only(*query_fields)
 
@@ -109,6 +112,7 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
 
     for foreignkey_field in foreignkey_fields_to_apply:
         query = query.select_related(foreignkey_field.name)
+
     for many2one_field in many2one_fields_to_apply:
         query = query.prefetch_related(
             models.Prefetch(
@@ -118,6 +122,7 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
             )
         )
     for many2many_field in many2many_fields_to_apply:
+        print(">>>> ", many2many_field.name)
         query = query.prefetch_related(
             models.Prefetch(
                 many2many_field.name,
@@ -125,9 +130,7 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
                 to_attr=f"m2m_{many2many_field.name}"
             )
         )
-
     enumerable_query = query[after:after + first]
-
     pos = 0
     edges = [
         {

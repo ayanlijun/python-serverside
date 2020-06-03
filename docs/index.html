@@ -331,6 +331,92 @@ class UserResolvers(BaseResolver):
 </section>
 
 <section class="bs-docs-section">
+  <h1 id="authentication" class="page-header">DynmaoDB</h1>
+
+  We have a few features to help working with DynamoDB
+
+  <h2 id="database hits">PynamoDB Class Serializers</h2>
+
+  Let's say that we have some model:
+
+{% highlight python %}
+from pynamodb import Model
+
+
+class SomeModel(Model):
+    ...
+{% endhighlight %}
+
+If we have some request that requires data from dynamodb, we most likely want to turn our
+query into some pure python based representation, namely `dict`. Instead of defining such
+logic for each request, we can use the following feature. It takes heavy inspiration
+from Django Rest Frameworks serializers, and as such works in a very similar way. We Instead
+call these serialization classes _jsonizers_.
+
+{% highlight python %}
+from .dynamodb_models import SomeModel
+from serverside.dynamodb import Jsonizer
+
+
+# Define model Jsonizer
+class SomeModelJsonizer(Jsonizer):
+
+    # Define attrs you want to use as a `set`.
+    ATTRS_DEFAULT = {"attr_1", "attr2"}
+    ATTRS_EXTENDED = ATTRS_DEFAULT | {"attr_3"}
+
+    def __init__(self, obj, many=False, context=None, attrs_type="DEFAULT"):
+        super(DynamodbMessageJsonizer, self).__init__(obj, many, context, attrs_type)
+{% endhighlight %}
+
+Now, we can jsonize pynamodb queries
+{% highlight python %}
+from .dynamodb_models import SomeModel
+from .jsonizers imprt SomeModelJsonizer
+
+query_iter = SomeModel.query(...)
+query_data = SomeModelJsonizer(query_iter).data
+{% endhighlight %}
+
+</section>
+
+from serverside.dynamodb import Jsonizer
+from django.conf import settings
+
+
+class DynamodbMessageJsonizer(Jsonizer):
+
+    ATTRS_ESSENTIAL = {"user_id", "character_timestamp_id"}
+    ATTRS_MESSAGE = ATTRS_ESSENTIAL | {
+        "text", "audio_key", "image_key", "video_key", "sticker_key", "source", "type", "read", "created",
+        "audio_url", "image_url", "video_url", "sticker_url"
+    }
+
+    def __init__(self, obj, many=False, context=None, attrs_type="essential"):
+        super(DynamodbMessageJsonizer, self).__init__(obj, many, context, attrs_type)
+
+    def get_image_url(self, obj) -> str:
+        if obj.image_key is None:
+            return None
+        return settings.S3_CLIENT.urlify(**{**settings.S3_URLIFY_PARAMS, "key": obj.image_key})
+
+    def get_audio_url(self, obj) -> str:
+        if obj.audio_key is None:
+            return None
+        return settings.S3_CLIENT.urlify(**{**settings.S3_URLIFY_PARAMS, "key": obj.audio_key})
+
+    def get_video_url(self, obj) -> str:
+        if obj.video_key is None:
+            return None
+        return settings.S3_CLIENT.urlify(**{**settings.S3_URLIFY_PARAMS, "key": obj.video_key})
+
+    def get_sticker_url(self, obj) -> str:
+        if obj.sticker_key is None:
+            return None
+        return settings.S3_CLIENT.urlify(**{**settings.S3_URLIFY_PARAMS, "key": obj.sticker_key})
+
+
+<section class="bs-docs-section">
   <h1 id="authentication" class="page-header">Authentication</h1>
 
   This section shows some useful authentication helpers.

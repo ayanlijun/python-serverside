@@ -1,4 +1,5 @@
 import os
+from serverside import State
 from serverside.auth import JWTAuth
 from serverside.graphql.ariadne import QueryType, MutationType
 
@@ -36,6 +37,7 @@ ROOT_URLCONF = "config.urls"
 STATIC_ROOT = f"/srv/static/"
 STATIC_URL = "/static/"
 
+STATE = State()
 QUERY = QueryType()
 MUTATION = MutationType()
 

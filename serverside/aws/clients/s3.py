@@ -1,3 +1,4 @@
+import typing as ty
 import boto3
 
 
@@ -33,12 +34,14 @@ class S3Client:
     def resource(self):
         return self._resource
 
-    def create_bucket_if_not_exists(self, bucket: str, acl: str):
+    def create_bucket_if_not_exists(self, bucket: str, acl: str, on_create: ty.Callable = None):
         try:
             self._client.head_bucket(Bucket=bucket)
         except Exception as err:
             print("err: NEED TO FIND OUT WHAT ERROR THIS IS TO SPECIFICALLY CATCH!!!", err)
             self._client.create_bucket(ACL=acl, Bucket=bucket)
+            if on_create is not None:
+                on_create()
 
     def generate_presigned_url(
         self,
@@ -61,9 +64,9 @@ class S3Client:
         )
         return presigned_url()
 
-    def urlize(self, url: str, bucket: str, key: str, https: bool = True) -> str:
-        https = "s" if https is True else ""
-        return f"http{https}://{bucket}.{url}/{key}"
+    def urlify(self, url: str, bucket: str, key: str, ssl: bool = True, local: bool = False) -> str:
+        """ Local supports operations through Localstack and through Minio """
+        return f"http{'s' if ssl is True else ''}://{bucket}{'.' if local is True else '/'}{key}"
 
     def upload_bytes(
         self,

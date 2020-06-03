@@ -6,6 +6,7 @@ from serverside.graphql.ariadne.helpers import combine_resolvers
 from apps.users.resolvers import export_resolvers as er1
 
 
+
 resolvers = combine_resolvers([er1])
 
 schema = open("/srv/config/schema.graphql", "r").read()

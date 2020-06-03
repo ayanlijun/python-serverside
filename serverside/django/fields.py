@@ -45,7 +45,6 @@ class S3Field(models.CharField):
 
     def get_prep_value(self, value):
         if value is None:
-            print("returning None")
             return None
         elif isinstance(value, str):
             raise ValueError("Custom Field <S3Field> should initialize with object of type <S3FieldObject>.")

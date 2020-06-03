@@ -7,7 +7,8 @@ from .django_models import (
     django_update,
     django_delete
 )
-from .helpers import combine_resolvers, auto_crud
+from .helpers import combine_resolvers, auto_crud, merge_schemas
+from .decorators import objecttype, ignore_fields_for_camel_conversion
 
 __all__ = [
     "ObjectType",
@@ -20,5 +21,8 @@ __all__ = [
     "django_update",
     "django_delete",
     "combine_resolvers",
-    "auto_crud"
+    "auto_crud",
+    "merge_schemas",
+    "objecttype",
+    "ignore_fields_for_camel_conversion"
 ]

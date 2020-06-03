@@ -5,15 +5,15 @@ import colorlog
 
 def get_logger(
     name: str,
-    debug_primary: str = "cyan",
-    debug_secondary: str = "bold_white",
+    debug_primary: str = "bold_cyan",
+    debug_secondary: str = "bold_cyan",
     info_primary: str = "bold_purple",
-    info_secondary: str = "white",
-    warning_primary: str = "bold_black,bg_yellow",
+    info_secondary: str = "bold_white",
+    warning_primary: str = "bold_yellow",
     warning_secondary: str = "bold_yellow",
-    error_primary: str = "bold_whote,bg_red",
+    error_primary: str = "bold_red",
     error_secondary: str = "bold_red",
-    critical_primary: str = "bold_white,bg_red",
+    critical_primary: str = "bold_red",
     critical_secondary: str = "bold_red"
 ) -> logging.Logger:
 

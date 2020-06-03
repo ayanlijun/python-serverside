@@ -19,6 +19,9 @@ class UserResolvers(BaseResolver):
             delete="deleteUser"
         )
         uid_gen = lambda: str(uuid.uuid4())
+        field_dependencies = {
+            "avatarUrl": "avatar"
+        }
 
     user = ObjectType("User")
 

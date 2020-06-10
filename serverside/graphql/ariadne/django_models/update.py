@@ -1,68 +1,49 @@
 import typing as ty
+from collections import OrderedDict
+
 from rest_framework import serializers
-import django
 from django.db import models
-from ._utils import recursive_camel2snake
+from ._utils import input2snake_input
 
 
-async def django_update(info, Model: models.Model, id: str, prevUpdated: float, input: ty.Dict) -> ty.Dict:
-    snake_input = recursive_camel2snake(input)
-    for field in Model._meta.get_fields():
-        if isinstance(field, models.fields.related.ForeignKey):
-            try:
-                fk_id = snake_input.pop(f"{field.name}_id")
-                snake_input[field.name] = fk_id
-            except KeyError:
-                continue  # Foreign key wasn't supplied to be updated
+async def django_update(
+    info,
+    Model: models.Model,
+    id: str,
+    field: str,
+    prevUpdated: float,
+    input: ty.Dict,
+    Serializer: serializers.Serializer = None
+) -> ty.Dict:
+
+    fields_needed = []
+    for l1i, l1v in enumerate(info.field_nodes):
+        if l1v.name.value == field:
+            for l2i, l2v in enumerate(l1v.selection_set.selections):
+                if l2v.name.value == "node":
+                    for l3i, l3v in enumerate(l2v.selection_set.selections):
+                        fields_needed.append(l3v.name.value)
+
+    new_declared_fields = OrderedDict()
+    for field_name, field_value in Serializer._declared_fields.items():
+        if field_name in fields_needed:
+            new_declared_fields[field_name] = field_value
+    Serializer._declared_fields = new_declared_fields
+
+    snake_input = input2snake_input(Model=Model, input=input)
 
     response = {"error": False, "message": "Update Successfull!", "node": None}
     try:
         instance = Model.objects.get(id=id)
         assert instance.updated.timestamp() == prevUpdated, "This object has been updated since last got it."
 
-        def create(self, validated_data):
-            instance = Model.objects.create(**validated_data)
-            instance.save()
-            return instance
-
-        def update(self, instance, validated_data):
-            for attr, value in validated_data.items():
-                if isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ManyToManyDescriptor):
-                    vals = validated_data.pop(attr, None)
-                    getattr(instance, attr).set(vals)
-                elif isinstance(getattr(Model, attr), django.db.models.fields.related_descriptors.ForwardManyToOneDescriptor):
-                    pass
-                elif isinstance(getattr(Model, attr), django.db.models.query_utils.DeferredAttribute):
-                    pass
-                else:
-                    print("instance not caught?")
-                    pass
-                setattr(instance, attr, value)
-            instance.save()
-            return instance
-
-        def get_updated(self, obj):
-            return obj.updated.timestamp()
-
-        def get_created(self, obj):
-            return obj.updated.timestamp()
-
-        Serializer = type("Serializer", (serializers.ModelSerializer,), {
-            **dict(create=create, update=update, get_updated=get_updated, get_created=get_created),
-            "Meta": type(Model.__name__, (), {
-                "model": Model,
-                "fields": "__all__"
-            }),
-            "updated": serializers.SerializerMethodField(),
-            "created": serializers.SerializerMethodField(),
-        })
-        before = Serializer(instance).data
-        serializer = Serializer(instance, data={**before, **snake_input})
+        _before = Serializer(instance).data
+        serializer = Serializer(instance, data={**_before, **snake_input}, many=False)
         if serializer.is_valid():
-            instance = serializer.save()
-            return {**response, "node": instance}
+            serializer.save()
+            return {**response, "node": serializer.data}
         else:
-            print(serializer.errors)
+            return {**response, "error": True, "message": str(serializer.errors)}
     except Model.DoesNotExist:
         return {**response, "error": True, "message": f"The object with id {id} could not be found."}
     except Exception as err:

@@ -1,10 +1,17 @@
 import typing as ty
-
 import inflection
+
 from django.db import models
+from rest_framework import serializers
 
 
-async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict = {}) -> ty.Dict:
+async def django_get_many(
+    info,
+    Model: models.Model,
+    field: str,
+    Serializer: serializers.Serializer = None,
+    kwargs: ty.Dict = {}
+) -> ty.Dict:
     first = kwargs.pop("first", None)
     after = kwargs.pop("after", None)
     before = kwargs.pop("before", None)
@@ -122,7 +129,6 @@ async def django_get_many(info, Model: models.Model, field: str, kwargs: ty.Dict
             )
         )
     for many2many_field in many2many_fields_to_apply:
-        print(">>>> ", many2many_field.name)
         query = query.prefetch_related(
             models.Prefetch(
                 many2many_field.name,

@@ -7,7 +7,10 @@ datetime_scalar = ScalarType("Datetime")
 
 @datetime_scalar.serializer
 def serialize_datetime(value):
-    return value.timestamp()
+    if isinstance(value, datetime):
+        return value.timestamp()
+    elif isinstance(value, str):
+        return datetime.fromisoformat(value).timestamp()
 
 
 @datetime_scalar.value_parser

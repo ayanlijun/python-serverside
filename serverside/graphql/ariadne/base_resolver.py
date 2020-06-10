@@ -22,7 +22,11 @@ class BaseResolver:
     def assign_m2m(cls, camel_field_name: str, field_name: str) -> None:
         @cls.OBJECT.field(camel_field_name)
         def resolve(obj, *args, **kwargs):
-            return getattr(obj, f"m2m_{field_name}", None)
+            attr = getattr(obj, f"m2m_{field_name}", None)
+            if attr is None:
+                if isinstance(obj, dict):
+                    return obj.get(field_name, [])
+            return attr
         setattr(cls, f"resolve_{cls._objectname}_{field_name}", staticmethod(resolve))
 
     @classmethod
@@ -59,6 +63,7 @@ class BaseResolver:
                         cls.assign_camel_to_snake_resolver(camel_field_name, field.name)
 
         ac = cls.Meta.auto_crud
+        _serializer = getattr(cls.Meta, "serializer", None)
 
         if ac.count:
             @settings.QUERY.field(ac.count)
@@ -76,19 +81,40 @@ class BaseResolver:
         if ac.get_many:
             @settings.QUERY.field(ac.get_many)
             async def func(_, info, *args, **kwargs):
-                return await django_get_many(info, cls.Meta.model, ac.get_many, kwargs)
+                return await django_get_many(
+                    info=info,
+                    Model=cls.Meta.model,
+                    field=ac.get_many,
+                    Serializer=_serializer,
+                    kwargs=kwargs
+                )
             setattr(cls, "resolve_list", staticmethod(func))
 
         if ac.create:
             @settings.MUTATION.field(ac.create)
             async def func(_, info, input: ty.Dict):
-                return await django_create(info, input, cls.Meta.model, cls.Meta.uid_gen)
+                return await django_create(
+                    info=info,
+                    input=input,
+                    Model=cls.Meta.model,
+                    field=ac.create,
+                    gen_uid=cls.Meta.uid_gen,
+                    Serializer=_serializer
+                )
             setattr(cls, "resolve_create", staticmethod(func))
 
         if ac.update:
             @settings.MUTATION.field(ac.update)
             async def func(_, info, id: str, prevUpdated: float, input: ty.Dict):
-                return await django_update(info, cls.Meta.model, id, prevUpdated, input)
+                return await django_update(
+                    info=info,
+                    Model=cls.Meta.model,
+                    id=id,
+                    field=ac.update,
+                    prevUpdated=prevUpdated,
+                    input=input,
+                    Serializer=_serializer
+                )
             setattr(cls, "resolve_update", staticmethod(func))
 
         if ac.delete:

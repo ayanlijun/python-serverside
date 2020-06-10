@@ -22,10 +22,14 @@ class BaseResolver:
     def assign_m2m(cls, camel_field_name: str, field_name: str) -> None:
         @cls.OBJECT.field(camel_field_name)
         def resolve(obj, *args, **kwargs):
-            attr = getattr(obj, f"m2m_{field_name}", None)
-            if attr is None:
-                if isinstance(obj, dict):
-                    return obj.get(field_name, [])
+            if isinstance(obj, dict):
+                attr = obj.get(f"m2m_{field_name}", [])
+                if not attr:
+                    attr = obj.get(field_name, [])
+            else:
+                attr = getattr(obj, f"m2m_{field_name}", None)
+                if attr is None:
+                    attr = getattr(obj, field_name, None)
             return attr
         setattr(cls, f"resolve_{cls._objectname}_{field_name}", staticmethod(resolve))
 

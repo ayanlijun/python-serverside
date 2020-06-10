@@ -1,5 +1,6 @@
 import typing as ty
 import inflection
+from collections import OrderedDict
 
 from django.db import models
 from rest_framework import serializers
@@ -138,10 +139,23 @@ async def django_get_many(
         )
     enumerable_query = query[after:after + first]
     pos = 0
+
+    # Serializer
+
+    new_declared_fields = OrderedDict()
+    for field_name, field_value in Serializer._declared_fields.items():
+        if field_name in query_fields:
+            new_declared_fields[field_name] = field_value
+        if field_name.endswith("_url"):
+            if field_name.replace("_url", "_key") in query_fields:
+                new_declared_fields[field_name] = field_value
+    Serializer._declared_fields = new_declared_fields
+    # End Serializer
+
     edges = [
         {
             "cursor": after + pos,
-            "node": inst
+            "node": Serializer(inst).data
         } for pos, inst in enumerate(enumerable_query)
     ]
 

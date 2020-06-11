@@ -4,7 +4,7 @@ from collections import OrderedDict
 from rest_framework import serializers
 from django.db import models
 
-from ._utils import input2snake_input
+from ._utils import mutation_input2snake_input
 
 
 async def django_create(
@@ -30,10 +30,10 @@ async def django_create(
             new_declared_fields[field_name] = field_value
     Serializer._declared_fields = new_declared_fields
 
-    snake_input = input2snake_input(Model=Model, input=input)
+    snake_input, m2m_context = mutation_input2snake_input(Model=Model, input=input)
     response = {"error": False, "message": "Create Successfull!", "node": None}
     try:
-        serializer = Serializer(data={"id": gen_uid(), **snake_input})
+        serializer = Serializer(data={"id": gen_uid(), **snake_input}, context={"m2m": m2m_context})
         if serializer.is_valid():
             serializer.save()
             return {**response, "node": serializer.data}

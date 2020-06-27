@@ -1,4 +1,8 @@
 
+import typing as ty
+import django
+
+
 def django_get(Model: django.db.models.Model, id: str) -> django.db.models.Model:
     try:
         return Model.objects.get(id=id)

@@ -62,7 +62,7 @@ class S3Client:
             ExpiresIn=expires_in,
             HttpMethod=method.upper()
         )
-        return presigned_url()
+        return presigned_url
 
     def urlify(self, url: str, bucket: str, key: str, ssl: bool = True, local: bool = False) -> str:
         """ Local supports operations through Localstack and through Minio """

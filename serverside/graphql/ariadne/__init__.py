@@ -1,8 +1,8 @@
 from ariadne import ObjectType, QueryType, MutationType
 from .base_resolver import BaseResolver
-from .django_models import (
-    django_get_one,
-    django_get_many,
+from .django_models import
+    DjangoQuery,
+    django_get,
     django_create,
     django_update,
     django_delete
@@ -15,8 +15,8 @@ __all__ = [
     "QueryType",
     "MutationType",
     "BaseResolver",
-    "django_get_one",
-    "django_get_many",
+    "DjangoQuery",
+    "django_get",
     "django_create",
     "django_update",
     "django_delete",
